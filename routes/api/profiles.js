@@ -1,53 +1,94 @@
-var router = require('express').Router();
-var mongoose = require('mongoose');
-var User = mongoose.model('User');
-var auth = require('../auth');
+var router = require("express").Router();
+var mongoose = require("mongoose");
+var User = mongoose.model("User");
+var auth = require("../auth");
+var helper = require("../helper/helper");
+var jwt = require("jsonwebtoken");
+var secret = require("../../config").secret;
 
 // Preload user profile on routes with ':username'
-router.param('username', function(req, res, next, username){
-  User.findOne({username: username}).then(function(user){
-    if (!user) { return res.sendStatus(404); }
+router.param("username", function(req, res, next, username) {
+  User.findOne({ username: username })
+    .then(function(user) {
+      if (!user) {
+        return res.sendStatus(404);
+      }
 
-    req.profile = user;
+      req.profile = user;
 
-    return next();
-  }).catch(next);
+      return next();
+    })
+    .catch(next);
 });
 
-router.get('/:username', auth.optional, function(req, res, next){
-  if(req.payload){
-    User.findById(req.payload.id).then(function(user){
-      if(!user){ return res.json({profile: req.profile.toProfileJSONFor(false)}); }
+router.get("/:username", auth.optional, function(req, res, next) {
+  // var token = helper.getTokenFromHeader(req);
+  // if (!token) {
+  //   return res.status(401).send({ auth: false, message: "No token provided." });
+  // }
 
-      return res.json({profile: req.profile.toProfileJSONFor(user)});
+  // jwt.verify(token, secret, function(err, decoded) {
+  //   if (err) {
+  //     return res
+  //       .status(500)
+  //       .send({ auth: false, message: "Failed to authenticate token." });
+  //   }
+
+  // });
+  var userRequest = req.params.username;
+  if (req.payload.username !== userRequest) {
+    return res.status(400).send({
+      RequestId: req.payload.id,
+      Authenticate: false,
+      Data: [],
+      Message: `Failed to authenticate token for ${userRequest}`
+      ResponseCode: 400,
+      ResponseDateTime: helper.getDateTime(),
+    });
+  }
+  if (req.payload) {
+    User.findById(req.payload.id).then(function(user) {
+      if (!user) {
+        return res.json({ profile: req.profile.toProfileJSONFor(false) });
+      }
+
+      return res.json({ profile: req.profile.toProfileJSONFor(user) });
     });
   } else {
-    return res.json({profile: req.profile.toProfileJSONFor(false)});
+    return res.json({ profile: req.profile.toProfileJSONFor(false) });
   }
 });
 
-router.post('/:username/follow', auth.required, function(req, res, next){
+router.post("/:username/follow", auth.required, function(req, res, next) {
   var profileId = req.profile._id;
 
-  User.findById(req.payload.id).then(function(user){
-    if (!user) { return res.sendStatus(401); }
+  User.findById(req.payload.id)
+    .then(function(user) {
+      if (!user) {
+        return res.sendStatus(401);
+      }
 
-    return user.follow(profileId).then(function(){
-      return res.json({profile: req.profile.toProfileJSONFor(user)});
-    });
-  }).catch(next);
+      return user.follow(profileId).then(function() {
+        return res.json({ profile: req.profile.toProfileJSONFor(user) });
+      });
+    })
+    .catch(next);
 });
 
-router.delete('/:username/follow', auth.required, function(req, res, next){
+router.delete("/:username/follow", auth.required, function(req, res, next) {
   var profileId = req.profile._id;
 
-  User.findById(req.payload.id).then(function(user){
-    if (!user) { return res.sendStatus(401); }
+  User.findById(req.payload.id)
+    .then(function(user) {
+      if (!user) {
+        return res.sendStatus(401);
+      }
 
-    return user.unfollow(profileId).then(function(){
-      return res.json({profile: req.profile.toProfileJSONFor(user)});
-    });
-  }).catch(next);
+      return user.unfollow(profileId).then(function() {
+        return res.json({ profile: req.profile.toProfileJSONFor(user) });
+      });
+    })
+    .catch(next);
 });
 
 module.exports = router;
