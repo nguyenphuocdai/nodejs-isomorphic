@@ -64,13 +64,6 @@ router.post("/users/login", function(req, res, next) {
 
     if (user) {
       user.token = user.generateJWT();
-      if (req.body.remember) {
-        var oneHour = 3600000;
-        req.session.cookie.expires = new Date(Date.now() + hour);
-        req.session.cookie.maxAge = hour;
-      } else {
-        req.session.cookie.expires = false;
-      }
       return res.json(user.toAuthJSON());
     } else {
       return res.status(422).json(info);

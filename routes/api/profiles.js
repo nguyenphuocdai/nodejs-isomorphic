@@ -33,20 +33,16 @@ router.get("/:username", auth.optional, function(req, res, next) {
   //       .status(500)
   //       .send({ auth: false, message: "Failed to authenticate token." });
   //   }
-
+  //   var deco = decoded;
   // });
-  var userRequest = req.params.username;
-  if (req.payload.username !== userRequest) {
-    return res.status(400).send({
-      RequestId: req.payload.id,
-      Authenticate: false,
-      Data: [],
-      Message: `Failed to authenticate token for ${userRequest}`
-      ResponseCode: 400,
-      ResponseDateTime: helper.getDateTime(),
-    });
-  }
+
   if (req.payload) {
+    var userRequest = req.params.username;
+    if (req.payload.username !== userRequest) {
+      return res.status(400).send({
+        profile: req.profile.toProfileJSONFor(false)
+      });
+    }
     User.findById(req.payload.id).then(function(user) {
       if (!user) {
         return res.json({ profile: req.profile.toProfileJSONFor(false) });
@@ -55,7 +51,7 @@ router.get("/:username", auth.optional, function(req, res, next) {
       return res.json({ profile: req.profile.toProfileJSONFor(user) });
     });
   } else {
-    return res.json({ profile: req.profile.toProfileJSONFor(false) });
+    return res.json({ auth: false, message: "Failed to authenticate token or token has expired." });
   }
 });
 
