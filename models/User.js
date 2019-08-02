@@ -84,8 +84,7 @@ UserSchema.methods.toAuthJSON = function() {
     username: this.username,
     email: this.email,
     displayname: this.displayname,
-    token: this.generateJWT(),
-    createdByUser: this.createdByUser
+    token: this.generateJWT()
   };
 };
 
